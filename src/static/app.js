@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  const participantsList = document.getElementById("participants-list");
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -12,24 +13,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
-      // Populate activities list
-      Object.entries(activities).forEach(([name, details]) => {
-        const activityCard = document.createElement("div");
-        activityCard.className = "activity-card";
+      // Populate activities list using renderActivities
+      renderActivities(activities);
 
-        const spotsLeft = details.max_participants - details.participants.length;
-
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-        `;
-
-        activitiesList.appendChild(activityCard);
-
-        // Add option to select dropdown
+      // Populate select dropdown
+      Object.keys(activities).forEach(name => {
         const option = document.createElement("option");
         option.value = name;
         option.textContent = name;
@@ -69,6 +59,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       messageDiv.classList.remove("hidden");
 
+      // Refresh activities to update participants list
+      fetchActivities();
+
       // Hide message after 5 seconds
       setTimeout(() => {
         messageDiv.classList.add("hidden");
@@ -80,6 +73,51 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error signing up:", error);
     }
   });
+
+  // Helper to create a participants section
+  function createParticipantsSection(participants) {
+    const section = document.createElement('div');
+    section.className = 'participants-section';
+    const title = document.createElement('div');
+    title.className = 'participants-title';
+    title.textContent = 'Participants:';
+    section.appendChild(title);
+    if (participants && participants.length > 0) {
+      const list = document.createElement('ul');
+      list.className = 'participants-list';
+      participants.forEach(email => {
+        const li = document.createElement('li');
+        li.textContent = email;
+        list.appendChild(li);
+      });
+      section.appendChild(list);
+    } else {
+      const none = document.createElement('div');
+      none.className = 'participants-none';
+      none.textContent = 'No participants yet.';
+      section.appendChild(none);
+    }
+    return section;
+  }
+
+  // Patch the code that renders activities
+  function renderActivities(activities) {
+    const activitiesList = document.getElementById('activities-list');
+    activitiesList.innerHTML = '';
+    Object.entries(activities).forEach(([name, info]) => {
+      const card = document.createElement('div');
+      card.className = 'activity-card';
+      card.innerHTML = `
+        <h4>${name}</h4>
+        <p><strong>Description:</strong> ${info.description}</p>
+        <p><strong>Schedule:</strong> ${info.schedule}</p>
+        <p><strong>Max Participants:</strong> ${info.max_participants}</p>
+      `;
+      // Add participants section
+      card.appendChild(createParticipantsSection(info.participants));
+      activitiesList.appendChild(card);
+    });
+  }
 
   // Initialize app
   fetchActivities();
